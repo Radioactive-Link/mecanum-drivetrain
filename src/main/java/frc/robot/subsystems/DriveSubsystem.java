@@ -49,6 +49,7 @@ public class DriveSubsystem extends SubsystemBase {
      * @param ySpeed The robot's speed along the Y axis [-1.0..1.0]. Left is positive.
      * @param zRotation The robot's rotation rate around the Z axis [-1.0..1.0]. Counterclockwise is
      *     positive.
+<<<<<<< HEAD
      * @param isFieldOriented Determines whether to drive the robot relative to the field, or to itself.
      */
     public void driveCartesian(double xSpeed, double ySpeed, double zRotation, boolean isFieldOriented) {
@@ -57,6 +58,11 @@ public class DriveSubsystem extends SubsystemBase {
             heading = gyro.getRotation2d().unaryMinus();
         }
         drivetrain.driveCartesian(xSpeed, ySpeed, zRotation, heading);
+=======
+     */
+    public void driveCartesian(double xSpeed, double ySpeed, double zRotation) {
+        drivetrain.driveCartesian(xSpeed, ySpeed, zRotation);
+>>>>>>> cde37d5 (docs: add driveCartesian comment)
     }
 
     // --- SubsystemBase --------------------------------------------------------------------------
