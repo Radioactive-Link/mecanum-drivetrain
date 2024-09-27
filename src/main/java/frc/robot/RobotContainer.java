@@ -27,7 +27,8 @@ public class RobotContainer {
         driveSubsystem.driveCartesian(
           controller.getLeftY(),
           -controller.getLeftX(),
-          -controller.getRightX()
+          -controller.getRightX(),
+          true
         );
       }, driveSubsystem)
     );
