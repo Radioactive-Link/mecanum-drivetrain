@@ -54,7 +54,7 @@ public class DriveSubsystem extends SubsystemBase {
     public void driveCartesian(double xSpeed, double ySpeed, double zRotation, boolean isFieldOriented) {
         Rotation2d heading = new Rotation2d();
         if (isFieldOriented && gyro != null) {
-            heading.equals(gyro.getRotation2d());
+            heading.equals(gyro.getRotation2d().unaryMinus());
         }
         drivetrain.driveCartesian(xSpeed, ySpeed, zRotation, heading);
     }
