@@ -27,6 +27,17 @@ public class DriveSubsystem extends SubsystemBase {
 
     // --- Public Methods -------------------------------------------------------------------------
 
+    /**
+     * Drive method for Mecanum platform.
+     *
+     * Angles are measured counterclockwise from the positive X axis. The robot's speed is
+     * independent of its angle or rotation rate.
+     *
+     * @param xSpeed The robot's speed along the X axis [-1.0..1.0]. Forward is positive.
+     * @param ySpeed The robot's speed along the Y axis [-1.0..1.0]. Left is positive.
+     * @param zRotation The robot's rotation rate around the Z axis [-1.0..1.0]. Counterclockwise is
+     *     positive.
+     */
     public void driveCartesian(double xSpeed, double ySpeed, double zRotation) {
         drivetrain.driveCartesian(xSpeed, ySpeed, zRotation);
     }
