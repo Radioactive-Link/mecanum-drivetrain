@@ -1,7 +1,5 @@
 package frc.robot.subsystems;
 
-import java.util.function.BooleanSupplier;
-
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
@@ -67,5 +65,7 @@ public class DriveSubsystem extends SubsystemBase {
     public void periodic() {}
 
     @Override
-    public void initSendable(SendableBuilder builder) {}
+    public void initSendable(SendableBuilder builder) {
+        builder.addDoubleProperty("Yaw", () -> gyro.getYaw(), null);
+    }
 }

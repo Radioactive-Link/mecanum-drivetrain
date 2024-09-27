@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -16,6 +17,7 @@ public class RobotContainer {
   public RobotContainer() {
     setDefaultCommands();
     configureBindings();
+    setupDashboard();
   }
 
   /** Sets default commands on all relevant subsystems. */
@@ -35,6 +37,10 @@ public class RobotContainer {
   }
 
   private void configureBindings() {}
+
+  private void setupDashboard() {
+    SmartDashboard.putData(driveSubsystem);
+  }
 
   public Command getAutonomousCommand() {
     return Commands.print("No autonomous command configured");
