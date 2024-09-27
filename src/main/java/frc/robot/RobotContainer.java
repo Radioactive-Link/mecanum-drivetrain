@@ -58,7 +58,7 @@ public class RobotContainer {
         // note that controller joystick axes are different from robot axes
         // because the robot follows the NWU coordinate system
         driveSubsystem.driveCartesian(
-          controller.getLeftY(),
+          -controller.getLeftY(),
           -controller.getLeftX(),
           -controller.getRightX()
         );
