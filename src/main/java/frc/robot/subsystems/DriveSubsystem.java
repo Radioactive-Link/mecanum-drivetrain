@@ -27,8 +27,8 @@ public class DriveSubsystem extends SubsystemBase {
 
         // inverse the right side of the drivetrain
         rrMotor.setInverted(true);
-        rlMotor.setInverted(true);
-
+        frMotor.setInverted(true);
+        
         // attempt to instantiate the gyroscope
         try {
             gyro = new AHRS(SPI.Port.kMXP);
