@@ -28,6 +28,7 @@ public class DriveSubsystem extends SubsystemBase {
         // inverse the right side of the drivetrain
         rrMotor.setInverted(true);
         frMotor.setInverted(true);
+<<<<<<< HEAD
         
         // attempt to instantiate the gyroscope
         try {
@@ -35,6 +36,8 @@ public class DriveSubsystem extends SubsystemBase {
         } catch (RuntimeException e) {
             DriverStation.reportError("Error instantiating navX-MXP:  " + e.getMessage(), true);
         }
+=======
+>>>>>>> acf4652 (fix: correct drivetrain motor inversing)
     }
 
     // --- Public Methods -------------------------------------------------------------------------
