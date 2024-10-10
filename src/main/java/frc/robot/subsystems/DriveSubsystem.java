@@ -22,7 +22,7 @@ public class DriveSubsystem extends SubsystemBase {
 
         // inverse the right side of the drivetrain
         rrMotor.setInverted(true);
-        rlMotor.setInverted(true);
+        frMotor.setInverted(true);
     }
 
     // --- Public Methods -------------------------------------------------------------------------
