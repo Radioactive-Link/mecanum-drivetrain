@@ -36,36 +36,6 @@ public class RobotContainer {
     );
   }
 
-  /** Sets default commands on all relevant subsystems. */
-  private void setDefaultCommands() {
-    driveSubsystem.setDefaultCommand(
-      Commands.run(() -> {
-        // note that controller joystick axes are different from robot axes
-        // because the robot follows the NWU coordinate system
-        driveSubsystem.driveCartesian(
-          -controller.getLeftY(),
-          -controller.getLeftX(),
-          -controller.getRightX()
-        );
-      }, driveSubsystem)
-    );
-  }
-
-  /** Sets default commands on all relevant subsystems. */
-  private void setDefaultCommands() {
-    driveSubsystem.setDefaultCommand(
-      Commands.run(() -> {
-        // note that controller joystick axes are different from robot axes
-        // because the robot follows the NWU coordinate system
-        driveSubsystem.driveCartesian(
-          -controller.getLeftY(),
-          -controller.getLeftX(),
-          -controller.getRightX()
-        );
-      }, driveSubsystem)
-    );
-  }
-
   private void configureBindings() {}
 
   private void setupDashboard() {
