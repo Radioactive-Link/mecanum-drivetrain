@@ -1,8 +1,13 @@
 package frc.robot.subsystems;
 
+import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.util.sendable.SendableBuilder;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -13,6 +18,7 @@ public class DriveSubsystem extends SubsystemBase {
     private CANSparkMax rlMotor = new CANSparkMax(3, MotorType.kBrushless);
     private CANSparkMax rrMotor = new CANSparkMax(4, MotorType.kBrushless);
     private MecanumDrive drivetrain = new MecanumDrive(flMotor, rlMotor, frMotor, rrMotor);
+    private AHRS gyro;
 
     public DriveSubsystem() {
         flMotor.restoreFactoryDefaults();
@@ -23,6 +29,13 @@ public class DriveSubsystem extends SubsystemBase {
         // inverse the right side of the drivetrain
         rrMotor.setInverted(true);
         frMotor.setInverted(true);
+        
+        // attempt to instantiate the gyroscope
+        try {
+            gyro = new AHRS(SPI.Port.kMXP);
+        } catch (RuntimeException e) {
+            DriverStation.reportError("Error instantiating navX-MXP:  " + e.getMessage(), true);
+        }
     }
 
     // --- Public Methods -------------------------------------------------------------------------
@@ -37,9 +50,14 @@ public class DriveSubsystem extends SubsystemBase {
      * @param ySpeed The robot's speed along the Y axis [-1.0..1.0]. Left is positive.
      * @param zRotation The robot's rotation rate around the Z axis [-1.0..1.0]. Counterclockwise is
      *     positive.
+     * @param isFieldOriented Determines whether to drive the robot relative to the field, or to itself.
      */
-    public void driveCartesian(double xSpeed, double ySpeed, double zRotation) {
-        drivetrain.driveCartesian(xSpeed, ySpeed, zRotation);
+    public void driveCartesian(double xSpeed, double ySpeed, double zRotation, boolean isFieldOriented) {
+        Rotation2d heading = new Rotation2d();
+        if (isFieldOriented && gyro != null) {
+            heading = gyro.getRotation2d().unaryMinus();
+        }
+        drivetrain.driveCartesian(xSpeed, ySpeed, zRotation, heading);
     }
 
     // --- SubsystemBase --------------------------------------------------------------------------
@@ -48,5 +66,7 @@ public class DriveSubsystem extends SubsystemBase {
     public void periodic() {}
 
     @Override
-    public void initSendable(SendableBuilder builder) {}
+    public void initSendable(SendableBuilder builder) {
+        builder.addDoubleProperty("Yaw", () -> gyro.getYaw(), null);
+    }
 }
