@@ -1,34 +1,37 @@
 package frc.robot.subsystems;
 
 import com.kauailabs.navx.frc.AHRS;
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkLowLevel.MotorType;
+import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkBase.PersistMode;
+import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.SPI;
-import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class DriveSubsystem extends SubsystemBase {
-    private CANSparkMax flMotor = new CANSparkMax(1, MotorType.kBrushless);
-    private CANSparkMax frMotor = new CANSparkMax(2, MotorType.kBrushless);
-    private CANSparkMax rlMotor = new CANSparkMax(3, MotorType.kBrushless);
-    private CANSparkMax rrMotor = new CANSparkMax(4, MotorType.kBrushless);
+    private SparkMax flMotor = new SparkMax(1, MotorType.kBrushless);
+    private SparkMax frMotor = new SparkMax(2, MotorType.kBrushless);
+    private SparkMax rlMotor = new SparkMax(3, MotorType.kBrushless);
+    private SparkMax rrMotor = new SparkMax(4, MotorType.kBrushless);
     private MecanumDrive drivetrain = new MecanumDrive(flMotor, rlMotor, frMotor, rrMotor);
     private AHRS gyro;
 
     public DriveSubsystem() {
-        flMotor.restoreFactoryDefaults();
-        frMotor.restoreFactoryDefaults();
-        rrMotor.restoreFactoryDefaults();
-        rlMotor.restoreFactoryDefaults();
+        SparkMaxConfig config = new SparkMaxConfig();
 
-        // inverse the right side of the drivetrain
-        rrMotor.setInverted(true);
-        frMotor.setInverted(true);
+        flMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        rlMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        
+        // inverse right side of the drivetrain
+        config.inverted(true);
+        frMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        rrMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         
         // attempt to instantiate the gyroscope
         try {
