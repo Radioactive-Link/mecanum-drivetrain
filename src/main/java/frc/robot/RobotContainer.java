@@ -28,8 +28,8 @@ public class RobotContainer {
         // because the robot follows the NWU coordinate system
         driveSubsystem.driveCartesian(
           -controller.getLeftY(),
-          -controller.getLeftX(),
-          -controller.getRightX(),
+          controller.getLeftX(),
+          controller.getRightX(),
           true
         );
       }, driveSubsystem)
