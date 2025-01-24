@@ -1,46 +1,8 @@
 {
-  "HALProvider": {
-    "Other Devices": {
-      "SPARK MAX [1]": {
-        "header": {
-          "open": true
-        }
-      },
-      "SPARK MAX [1] RELATIVE ENCODER": {
-        "header": {
-          "open": true
-        }
-      },
-      "SPARK MAX [2]": {
-        "header": {
-          "open": true
-        }
-      },
-      "SPARK MAX [2] RELATIVE ENCODER": {
-        "header": {
-          "open": true
-        }
-      },
-      "SPARK MAX [3]": {
-        "header": {
-          "open": true
-        }
-      },
-      "SPARK MAX [4]": {
-        "header": {
-          "open": true
-        }
-      },
-      "navX-Sensor[0]": {
-        "header": {
-          "open": true
-        }
-      }
-    }
-  },
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
+      "/SmartDashboard/Alerts": "Alerts",
       "/SmartDashboard/Field": "Field2d"
     },
     "windows": {
@@ -62,17 +24,25 @@
     "Persistent Values": {
       "open": false
     },
+    "Retained Values": {
+      "open": false
+    },
     "transitory": {
       "Pose2d##v_Robot Pose": {
+        "Translation2d##v_translation": {
+          "open": true
+        },
         "open": true
       },
       "SmartDashboard": {
+        "Alerts": {
+          "open": true
+        },
         "Field": {
           "double[]##v_/SmartDashboard/Field/Robot": {
             "open": true
           }
-        },
-        "open": true
+        }
       }
     }
   },
