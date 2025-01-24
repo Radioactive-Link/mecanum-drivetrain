@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.subsystems.DriveSubsystem;
 
 public class RobotContainer {
@@ -23,20 +24,21 @@ public class RobotContainer {
   /** Sets default commands on all relevant subsystems. */
   private void setDefaultCommands() {
     driveSubsystem.setDefaultCommand(
-      Commands.run(() -> {
-        // note that controller joystick axes are different from robot axes
-        // because the robot follows the NWU coordinate system
-        driveSubsystem.driveCartesian(
-          -controller.getLeftY(),
-          -controller.getLeftX(),
-          -controller.getRightX(),
-          true
-        );
-      }, driveSubsystem)
+      driveSubsystem.stop()
     );
   }
 
-  private void configureBindings() {}
+  private void configureBindings() {
+    // [SysId Bindings]
+    var routine = driveSubsystem.getRoutine();
+    // button must be held down to complete routine
+    controller.y().whileTrue(routine.quasistatic(Direction.kForward));
+    controller.a().whileTrue(routine.quasistatic(Direction.kReverse));
+    // dpad up
+    controller.pov(0).whileTrue(routine.dynamic(Direction.kForward));
+    // dpad down
+    controller.pov(180).whileTrue(routine.dynamic(Direction.kReverse));
+  }
 
   private void setupDashboard() {
     SmartDashboard.putData(driveSubsystem);
