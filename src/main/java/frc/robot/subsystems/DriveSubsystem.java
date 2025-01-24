@@ -67,8 +67,10 @@ public class DriveSubsystem extends SubsystemBase {
     private StructPublisher<Pose2d> posePublisher =
         NetworkTableInstance.getDefault().getStructTopic("Robot Pose", Pose2d.struct).publish();
     private Rotation2d simHeading = new Rotation2d();
-    // sim motors
-    private DCMotor neo = DCMotor.getNEO(1);//.withReduction(kGearRatio);
+    // sim motors. gear reduction could technically be applied here, but it was easier to do manually.
+    // a con though is that the simgui velocities are way off, but this is counteracted by manually
+    // putting accurate ones to smartdashboard.
+    private DCMotor neo = DCMotor.getNEO(1);
     private SparkSim[] sparkSims =
         new SparkSim[] {
             new SparkSim(flMotor, neo),
@@ -191,10 +193,10 @@ public class DriveSubsystem extends SubsystemBase {
 
         SmartDashboard.putNumber("X Target Speeds mps", relativeSpeeds.vxMetersPerSecond);
 
-        // double flFF = motorFeedforward.calculate(targetWheelSpeeds.frontLeftMetersPerSecond);
-        // double frFF = motorFeedforward.calculate(targetWheelSpeeds.frontRightMetersPerSecond);
-        // double rlFF = motorFeedforward.calculate(targetWheelSpeeds.rearLeftMetersPerSecond);
-        // double rrFF = motorFeedforward.calculate(targetWheelSpeeds.rearRightMetersPerSecond);
+        double flFF = motorFeedforward.calculate(targetWheelSpeeds.frontLeftMetersPerSecond);
+        double frFF = motorFeedforward.calculate(targetWheelSpeeds.frontRightMetersPerSecond);
+        double rlFF = motorFeedforward.calculate(targetWheelSpeeds.rearLeftMetersPerSecond);
+        double rrFF = motorFeedforward.calculate(targetWheelSpeeds.rearRightMetersPerSecond);
 
         // flMotor.getClosedLoopController().setReference(targetWheelSpeeds.frontLeftMetersPerSecond / Math.PI * 60 / kWheelDiameterMeters * 10, ControlType.kVelocity);
         // frMotor.getClosedLoopController().setReference(targetWheelSpeeds.frontRightMetersPerSecond / Math.PI * 60 / kWheelDiameterMeters * 10, ControlType.kVelocity);
@@ -205,10 +207,10 @@ public class DriveSubsystem extends SubsystemBase {
         double rlOutput = rlController.calculate(currentWheelSpeeds.rearLeftMetersPerSecond, targetWheelSpeeds.rearLeftMetersPerSecond);
         double rrOutput = rrController.calculate(currentWheelSpeeds.rearRightMetersPerSecond, targetWheelSpeeds.rearRightMetersPerSecond);
 
-        flMotor.setVoltage(flOutput);// + flFF);
-        frMotor.setVoltage(frOutput);// + frFF);
-        rlMotor.setVoltage(rlOutput);// + rlFF);
-        rrMotor.setVoltage(rrOutput);// + rrFF);
+        flMotor.setVoltage(flOutput + flFF);
+        frMotor.setVoltage(frOutput + frFF);
+        rlMotor.setVoltage(rlOutput + rlFF);
+        rrMotor.setVoltage(rrOutput + rrFF);
     }
 
     // --- Private Methods ------------------------------------------------------------------------
@@ -241,11 +243,11 @@ public class DriveSubsystem extends SubsystemBase {
             // --- update sims ---
             for (int i = 0; i < motorSims.length; ++i) {
                 // calculate sim measurements (mainly velocity) from input voltage
-                motorSims[i].setInputVoltage(motors[i].getAppliedOutput());// * 12);
+                motorSims[i].setInputVoltage(motors[i].getAppliedOutput() * 12);
                 motorSims[i].update(0.02);
                 // apply it to spark
-                sparkSims[i].iterate(motorSims[i].getAngularVelocityRPM(), RoboRioSim.getVInVoltage(), 0.02);
-                encodersSims[i].iterate(motorSims[i].getAngularVelocityRPM(), 0.02);
+                sparkSims[i].iterate(motorSims[i].getAngularVelocityRPM() / kGearRatio, RoboRioSim.getVInVoltage(), 0.02);
+                encodersSims[i].iterate(motorSims[i].getAngularVelocityRPM() / kGearRatio, 0.02);
             }
             // use kinematics to figure out heading
             simHeading = Rotation2d.fromRadians(kinematics.toTwist2d(getWheelPositions()).dtheta);
