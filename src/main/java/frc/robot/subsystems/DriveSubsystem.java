@@ -147,13 +147,13 @@ public class DriveSubsystem extends SubsystemBase {
         //     field.setRobotPose(pose);
         // });
 
-        // PathPlannerLogging.setLogTargetPoseCallback((pose) -> {
-        //     field.getObject("target pose").setPose(pose);
-        // });
+        PathPlannerLogging.setLogTargetPoseCallback((pose) -> {
+            field.getObject("target pose").setPose(pose);
+        });
 
-        // PathPlannerLogging.setLogActivePathCallback((poses) -> {
-        //     field.getObject("path").setPoses(poses);
-        // });
+        PathPlannerLogging.setLogActivePathCallback((poses) -> {
+            field.getObject("path").setPoses(poses);
+        });
     }
 
     // --- Public Methods -------------------------------------------------------------------------
