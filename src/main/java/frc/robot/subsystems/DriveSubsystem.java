@@ -253,23 +253,29 @@ public class DriveSubsystem extends SubsystemBase {
 
     @Override 
     public void periodic() {
-        if (!Robot.isReal()) {
-            // --- update sims ---
-            for (int i = 0; i < motorSims.length; ++i) {
-                // calculate sim measurements (mainly velocity) from input voltage
-                motorSims[i].setInputVoltage(motors[i].getAppliedOutput() * 12);
-                motorSims[i].update(0.02);
-                // apply it to spark
-                sparkSims[i].iterate(motorSims[i].getAngularVelocityRPM() / kGearRatio, RoboRioSim.getVInVoltage(), 0.02);
-                encodersSims[i].iterate(motorSims[i].getAngularVelocityRPM() / kGearRatio, 0.02);
-            }
-            // use kinematics to figure out heading
-            simHeading = Rotation2d.fromRadians(kinematics.toTwist2d(getWheelPositions()).dtheta);
-            poseEstimator.update(simHeading, getWheelPositions());
-        } else {
-            // --- update real robot ---
+        // periodic is called in simulation, so this check is necessary to not mess with simulation
+        // code
+        if (Robot.isReal()) {
             poseEstimator.update(gyro.getRotation2d(), getWheelPositions());
+            // telemetry
+            field.setRobotPose(poseEstimator.getEstimatedPosition());
+            posePublisher.set(poseEstimator.getEstimatedPosition());
         }
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        for (int i = 0; i < motorSims.length; ++i) {
+            // calculate sim measurements (mainly velocity) from input voltage
+            motorSims[i].setInputVoltage(motors[i].getAppliedOutput() * 12);
+            motorSims[i].update(0.02);
+            // apply it to spark
+            sparkSims[i].iterate(motorSims[i].getAngularVelocityRPM() / kGearRatio, RoboRioSim.getVInVoltage(), 0.02);
+            encodersSims[i].iterate(motorSims[i].getAngularVelocityRPM() / kGearRatio, 0.02);
+        }
+        // use kinematics to figure out heading
+        simHeading = Rotation2d.fromRadians(kinematics.toTwist2d(getWheelPositions()).dtheta);
+        poseEstimator.update(simHeading, getWheelPositions());
 
         flController.setP(SmartDashboard.getNumber("kP", kP));
         frController.setP(SmartDashboard.getNumber("kP", kP));
