@@ -88,9 +88,9 @@ public class Constants {
 
         // --- PID --------------------------------------------------------------------------------
         // [Pathplanning]
-        public static final double kTranslationalXP = 9.6; // placeholder
-        public static final double kTranslationalYP = 9.6; // placeholder
-        public static final double kRotationalP = 9.6; // placeholder
+        public static final double kTranslationalXP = 5; // placeholder
+        public static final double kTranslationalYP = 5; // placeholder
+        public static final double kRotationalP = 5; // placeholder
         // [Motors]
         public static final double kP = 2.0269; // placeholder
         public static final double kD = 0; // placeholder

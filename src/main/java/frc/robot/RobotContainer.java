@@ -55,12 +55,14 @@ public class RobotContainer {
 
     try {
       if (Robot.isSimulation()) {
-        controller.a().onTrue(
-          AutoBuilder.pathfindThenFollowPath(
-            PathPlannerPath.fromPathFile("Human Player"),
-            constraints
-          ).andThen(AutoBuilder.followPath(PathPlannerPath.fromPathFile("Align Human Player")))
-        );
+        controller.a().onTrue(driveSubsystem.temporarilyDisableMotorSafetyCommand(
+            AutoBuilder.pathfindThenFollowPath(
+              PathPlannerPath.fromPathFile("Human Player"),
+              constraints
+            ).andThen(
+              AutoBuilder.followPath(PathPlannerPath.fromPathFile("Align Human Player"))
+            )
+        ));
       }
     } catch (Exception e) {
       DriverStation.reportWarning("path file: 'Human Player' cannot be found. Doing nothing.", false);

@@ -33,6 +33,7 @@ import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj.simulation.RoboRioSim;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
 import static frc.robot.Constants.DrivetrainConstants.*;
@@ -184,7 +185,7 @@ public class DriveSubsystem extends SubsystemBase {
 
     public void driveRobotRelative(ChassisSpeeds relativeSpeeds) {
         MecanumDriveWheelSpeeds targetWheelSpeeds = kinematics.toWheelSpeeds(relativeSpeeds);
-        // targetWheelSpeeds.desaturate(edu.wpi.first.units.Units.FeetPerSecond.of());
+        targetWheelSpeeds.desaturate(edu.wpi.first.units.Units.FeetPerSecond.of(13));
         MecanumDriveWheelSpeeds currentWheelSpeeds = getWheelSpeeds();
 
         SmartDashboard.putNumber("X Target Speeds mps", relativeSpeeds.vxMetersPerSecond);
@@ -207,6 +208,23 @@ public class DriveSubsystem extends SubsystemBase {
         frMotor.setVoltage(frOutput + frFF);
         rlMotor.setVoltage(rlOutput + rlFF);
         rrMotor.setVoltage(rrOutput + rrFF);
+    }
+
+    /**
+     * Use to run a command without motor safety enabled.
+     * 
+     * Reenables motor safety after (even if interrupted). Very useful for situations where the
+     * driver is not in control of the drivetrain e.g. pathplanning.
+     * 
+     * @param inner the command to run without motor safety enabled.
+     * @return the fully wrapped command.
+     */
+    public Command temporarilyDisableMotorSafetyCommand(Command inner) {
+        return inner.beforeStarting(
+            runOnce(() -> drivetrain.setSafetyEnabled(false))
+        ).finallyDo(
+            () -> drivetrain.setSafetyEnabled(true)
+        );
     }
 
     // --- Private Methods ------------------------------------------------------------------------
