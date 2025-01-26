@@ -257,10 +257,11 @@ public class DriveSubsystem extends SubsystemBase {
         // code
         if (Robot.isReal()) {
             poseEstimator.update(gyro.getRotation2d(), getWheelPositions());
-            // telemetry
-            field.setRobotPose(poseEstimator.getEstimatedPosition());
-            posePublisher.set(poseEstimator.getEstimatedPosition());
         }
+
+        // telemetry
+        field.setRobotPose(poseEstimator.getEstimatedPosition());
+        posePublisher.set(poseEstimator.getEstimatedPosition());
     }
 
     @Override
@@ -286,10 +287,6 @@ public class DriveSubsystem extends SubsystemBase {
         frController.setD(SmartDashboard.getNumber("kD", kD));
         rlController.setD(SmartDashboard.getNumber("kD", kD));
         rrController.setD(SmartDashboard.getNumber("kD", kD));
-
-        // telemetry
-        field.setRobotPose(poseEstimator.getEstimatedPosition());
-        posePublisher.set(poseEstimator.getEstimatedPosition());
     }
 
     @Override

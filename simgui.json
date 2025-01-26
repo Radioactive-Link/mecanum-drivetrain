@@ -37,6 +37,15 @@
       "open": false
     },
     "transitory": {
+      "PathPlanner": {
+        "Pose2d##v_/PathPlanner/currentPose": {
+          "Translation2d##v_translation": {
+            "open": true
+          },
+          "open": true
+        },
+        "open": true
+      },
       "Pose2d##v_Robot Pose": {
         "Translation2d##v_translation": {
           "open": true
