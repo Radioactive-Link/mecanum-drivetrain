@@ -17,15 +17,31 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.DriveSubsystem;
+import frc.robot.vision.Vision;
 
 public class RobotContainer {
   private DriveSubsystem driveSubsystem = new DriveSubsystem();
+  private Vision vision = new Vision();
+  private Vision.VisionSim visionSim = new Vision.VisionSim();
   private CommandXboxController controller = new CommandXboxController(0);
 
   public RobotContainer() {
     setDefaultCommands();
     configureBindings();
     setupDashboard();
+  }
+
+  public void simulationPeriodic() {
+    var estPose = visionSim.getEstimatedRobotPose();
+    estPose.ifPresent(est -> {
+      var estStdDevs = visionSim.getEstimationStdDevs();
+      driveSubsystem.addVisionMeasurement(est.estimatedPose.toPose2d(), est.timestampSeconds, estStdDevs);
+    });
+
+    visionSim.updateSimulation(driveSubsystem.getPose());
+
+    var debugField = visionSim.getSimDebugField();
+    debugField.getObject("EstimatedRobot").setPose(driveSubsystem.getPose());
   }
 
   /** Sets default commands on all relevant subsystems. */

@@ -12,6 +12,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
+import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -22,6 +23,8 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.MecanumDriveKinematics;
 import edu.wpi.first.math.kinematics.MecanumDriveWheelPositions;
 import edu.wpi.first.math.kinematics.MecanumDriveWheelSpeeds;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.math.util.Units;
@@ -148,7 +151,7 @@ public class DriveSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("kD", SmartDashboard.getNumber("kD", kD));
 
         // telemetry
-        // SmartDashboard.putData("Field", field);
+        SmartDashboard.putData("Field", field);
         // PathPlannerLogging.setLogCurrentPoseCallback((pose) -> {
         //     field.setRobotPose(pose);
         // });
@@ -231,6 +234,14 @@ public class DriveSubsystem extends SubsystemBase {
         ).finallyDo(
             () -> drivetrain.setSafetyEnabled(true)
         );
+    }
+
+    public void addVisionMeasurement(Pose2d pose, double timestampSeconds, Matrix<N3, N1> stdDevs) {
+        poseEstimator.addVisionMeasurement(pose, timestampSeconds, stdDevs);
+    }
+
+    public Pose2d getPose() {
+        return poseEstimator.getEstimatedPosition();
     }
 
     // --- Private Methods ------------------------------------------------------------------------
