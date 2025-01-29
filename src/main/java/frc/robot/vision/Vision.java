@@ -23,9 +23,11 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import frc.robot.vision.LimelightHelpers.PoseEstimate;
 import frc.robot.Constants.VisionConstants;
+import frc.robot.subsystems.DriveSubsystem;
 
 /** 
  * Used for fetching data from Vision APIs.
@@ -45,6 +47,46 @@ public class Vision {
             cameraPos.getRotation().getY(),
             cameraPos.getRotation().getZ()
         );
+    }
+
+    /** 
+     * Update Drivesubsystem's position (pose estimator) using vision. Auto rejects measurements
+     * deemed to be unreliable. 
+     */
+    public void update(DriveSubsystem driveSubsystem) {
+        LimelightHelpers.SetRobotOrientation(
+            "limelight",
+            driveSubsystem.getPose().getRotation().getDegrees(),
+            0, 0, 0, 0, 0
+        );
+        PoseEstimate estimate = 
+            LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight");
+        // strategy taken from: https://www.chiefdelphi.com/t/limelight-odometry-question/433311/6
+        if (driveSubsystem.shouldAcceptVisionMeasurement(estimate)) {
+            double poseDifference = driveSubsystem.getPose()
+                                                  .getTranslation()
+                                                  .getDistance(estimate.pose.getTranslation());
+            double xyStdDevs = .7;
+            double degStdDevs = 9999999;
+            // multiple visible tags
+            if (estimate.tagCount >= 2) {
+                xyStdDevs = .5;
+                degStdDevs = 6;
+            } 
+            // target has large area and estimated pose is close
+            else if (Vision.getBestTargetArea(estimate) > 0.8 && poseDifference < 0.5) {
+                xyStdDevs = 1;
+                degStdDevs = 12;
+            }
+            // target is further away, but estimated pose is closer
+            else if (Vision.getBestTargetArea(estimate) > 0.1 && poseDifference < 0.3) {
+                xyStdDevs = 2;
+                degStdDevs = 30;
+            }
+            driveSubsystem.addVisionMeasurement(
+                estimate.pose, estimate.timestampSeconds,
+                VecBuilder.fill(xyStdDevs, xyStdDevs, Units.degreesToRadians(degStdDevs)));
+        }
     }
 
     // --- Utility --------------------------------------------------------------------------------

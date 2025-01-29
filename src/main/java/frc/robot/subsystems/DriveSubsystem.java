@@ -267,7 +267,7 @@ public class DriveSubsystem extends SubsystemBase {
     }
 
     /** Returns true if the given estimate should be accepted and added to the poseEstimator. */
-    private boolean shouldAcceptVisionMeasurement(PoseEstimate estimate) {
+    public boolean shouldAcceptVisionMeasurement(PoseEstimate estimate) {
         // turning faster than 720 degrees per second
         if (Math.abs(gyro.getRate()) > 720) {
             return false;
@@ -287,42 +287,6 @@ public class DriveSubsystem extends SubsystemBase {
         // code
         if (Robot.isReal()) {
             poseEstimator.update(gyro.getRotation2d(), getWheelPositions());
-
-            // vision
-            // strategy taken from: https://www.chiefdelphi.com/t/limelight-odometry-question/433311/6
-            LimelightHelpers.SetRobotOrientation(
-                "limelight",
-                poseEstimator.getEstimatedPosition().getRotation().getDegrees(),
-                 0, 0, 0, 0, 0
-            );
-            PoseEstimate estimate = 
-                LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight");
-            if (shouldAcceptVisionMeasurement(estimate)) {
-                double poseDifference = poseEstimator.getEstimatedPosition()
-                                                     .getTranslation()
-                                                     .getDistance(estimate.pose.getTranslation());
-                double xyStdDevs = .7;
-                double degStdDevs = 9999999;
-                // multiple visible tags
-                if (estimate.tagCount >= 2) {
-                    xyStdDevs = .5;
-                    degStdDevs = 6;
-                } 
-                // target has large area and estimated pose is close
-                else if (Vision.getBestTargetArea(estimate) > 0.8 && poseDifference < 0.5) {
-                    xyStdDevs = 1;
-                    degStdDevs = 12;
-                }
-                // target is further away, but estimated pose is closer
-                else if (Vision.getBestTargetArea(estimate) > 0.1 && poseDifference < 0.3) {
-                    xyStdDevs = 2;
-                    degStdDevs = 30;
-                }
-
-                poseEstimator.setVisionMeasurementStdDevs(
-                    VecBuilder.fill(xyStdDevs, xyStdDevs, Units.degreesToRadians(degStdDevs)));
-                poseEstimator.addVisionMeasurement(estimate.pose, estimate.timestampSeconds);
-            }
         }
 
         // telemetry

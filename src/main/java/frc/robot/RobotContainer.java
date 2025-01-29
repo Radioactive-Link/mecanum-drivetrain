@@ -9,7 +9,6 @@ import com.pathplanner.lib.commands.PathPlannerAuto;
 import com.pathplanner.lib.path.PathConstraints;
 import com.pathplanner.lib.path.PathPlannerPath;
 
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -22,16 +21,29 @@ import frc.robot.vision.Vision;
 public class RobotContainer {
   private DriveSubsystem driveSubsystem = new DriveSubsystem();
   private Vision vision = new Vision();
-  private Vision.VisionSim visionSim = new Vision.VisionSim();
+  private Vision.VisionSim visionSim;
   private CommandXboxController controller = new CommandXboxController(0);
 
   public RobotContainer() {
+    if (Robot.isSimulation()) {
+      visionSim = new Vision.VisionSim();
+    }
     setDefaultCommands();
     configureBindings();
     setupDashboard();
   }
 
+  public void periodic() {
+    if (Robot.isReal()) {
+      vision.update(driveSubsystem);
+    }
+  }
+
   public void simulationPeriodic() {
+    if (visionSim == null) {
+      DriverStation.reportError("RobotContainer.simulationPeriodic(): Vision Simulation is enabled but not instantiated. Doing nothing", null);
+      return;
+    }
     var estPose = visionSim.getEstimatedRobotPose();
     estPose.ifPresent(est -> {
       var estStdDevs = visionSim.getEstimationStdDevs();
