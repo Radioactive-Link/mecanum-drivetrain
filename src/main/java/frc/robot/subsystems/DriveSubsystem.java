@@ -3,9 +3,7 @@ package frc.robot.subsystems;
 import com.kauailabs.navx.frc.AHRS;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.util.PathPlannerLogging;
-import com.revrobotics.sim.SparkRelativeEncoderSim;
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkSim;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
@@ -24,16 +22,12 @@ import edu.wpi.first.math.kinematics.MecanumDriveWheelPositions;
 import edu.wpi.first.math.kinematics.MecanumDriveWheelSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
-import edu.wpi.first.wpilibj.simulation.DCMotorSim;
-import edu.wpi.first.wpilibj.simulation.RoboRioSim;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -50,7 +44,6 @@ public class DriveSubsystem extends SubsystemBase {
     private SparkMax rlMotor = new SparkMax(kRearLeft, MotorType.kBrushless);
     private SparkMax rrMotor = new SparkMax(kRearRight, MotorType.kBrushless);
     private MecanumDrive drivetrain = new MecanumDrive(flMotor, rlMotor, frMotor, rrMotor);
-    private SparkMax[] motors = new SparkMax[] {flMotor, frMotor, rlMotor, rrMotor};
     private MecanumDriveKinematics kinematics = kDriveKinematics;
     private MecanumDrivePoseEstimator poseEstimator;
     private AHRS gyro;
@@ -68,33 +61,7 @@ public class DriveSubsystem extends SubsystemBase {
     private Field2d field = new Field2d();
     private StructPublisher<Pose2d> posePublisher =
         NetworkTableInstance.getDefault().getStructTopic("Robot Pose", Pose2d.struct).publish();
-    private Rotation2d simHeading = new Rotation2d();
-    // sim motors. gear reduction could technically be applied here, but it was easier to do manually.
-    // a con though is that the simgui velocities are way off, but this is counteracted by manually
-    // putting accurate ones to smartdashboard.
-    private DCMotor neo = DCMotor.getNEO(1);
-    private SparkSim[] sparkSims =
-        new SparkSim[] {
-            new SparkSim(flMotor, neo),
-            new SparkSim(frMotor, neo),
-            new SparkSim(rlMotor, neo),
-            new SparkSim(rrMotor, neo)
-        };
-    // used for velocity calculations
-    private DCMotorSim[] motorSims =
-        new DCMotorSim[] {
-            new DCMotorSim(LinearSystemId.createDCMotorSystem(neo, 6.66E-15, 1 / kGearRatio), neo),
-            new DCMotorSim(LinearSystemId.createDCMotorSystem(neo, 6.66E-15, 1 / kGearRatio), neo),
-            new DCMotorSim(LinearSystemId.createDCMotorSystem(neo, 6.66E-15, 1 / kGearRatio), neo),
-            new DCMotorSim(LinearSystemId.createDCMotorSystem(neo, 6.66E-15, 1 / kGearRatio), neo),
-        };
-    private SparkRelativeEncoderSim[] encodersSims =
-        new SparkRelativeEncoderSim[] {
-            new SparkRelativeEncoderSim(flMotor),
-            new SparkRelativeEncoderSim(frMotor),
-            new SparkRelativeEncoderSim(rlMotor),
-            new SparkRelativeEncoderSim(rrMotor)
-        };
+    private DriveSim driveSim;
 
     public DriveSubsystem() {
         // avoid mutating default config by using apply
@@ -143,6 +110,10 @@ public class DriveSubsystem extends SubsystemBase {
             this
         );
 
+        if (Robot.isSimulation()) {
+            driveSim = new DriveSim(flMotor, frMotor, rlMotor, rrMotor);
+        }
+
         SmartDashboard.putNumber("kP", SmartDashboard.getNumber("kP", kP));
         SmartDashboard.putNumber("kD", SmartDashboard.getNumber("kD", kD));
 
@@ -178,9 +149,9 @@ public class DriveSubsystem extends SubsystemBase {
     public void driveCartesian(double xSpeed, double ySpeed, double zRotation, boolean isFieldOriented) {
         Rotation2d heading = new Rotation2d();
         if (isFieldOriented) {
-            if (!Robot.isReal()) {
+            if (Robot.isSimulation() && driveSim != null) {
                 // pi/2 offset is for driving relative to the screen when field image is horizontal
-                heading = simHeading.unaryMinus().plus(Rotation2d.fromRadians(Math.PI / 2));
+                heading = driveSim.getHeading().unaryMinus().plus(Rotation2d.fromRadians(Math.PI / 2));
             } else if (gyro != null) {
                 heading = gyro.getRotation2d().unaryMinus();
             }
@@ -292,17 +263,11 @@ public class DriveSubsystem extends SubsystemBase {
 
     @Override
     public void simulationPeriodic() {
-        for (int i = 0; i < motorSims.length; ++i) {
-            // calculate sim measurements (mainly velocity) from input voltage
-            motorSims[i].setInputVoltage(motors[i].getAppliedOutput() * 12);
-            motorSims[i].update(0.02);
-            // apply it to spark
-            sparkSims[i].iterate(motorSims[i].getAngularVelocityRPM() / kGearRatio, RoboRioSim.getVInVoltage(), 0.02);
-            encodersSims[i].iterate(motorSims[i].getAngularVelocityRPM() / kGearRatio, 0.02);
+        if (driveSim != null) {
+            driveSim.updateSimulation(getWheelPositions(), poseEstimator);
+        } else {
+            DriverStation.reportError("DriveSubsystem.simulationPeriodic(): DriveSim is uninitialized but simulation is enabled", null);
         }
-        // use kinematics to figure out heading
-        simHeading = Rotation2d.fromRadians(kinematics.toTwist2d(getWheelPositions()).dtheta);
-        poseEstimator.update(simHeading, getWheelPositions());
 
         flController.setP(SmartDashboard.getNumber("kP", kP));
         frController.setP(SmartDashboard.getNumber("kP", kP));
