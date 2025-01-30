@@ -12,6 +12,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
+import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.estimator.MecanumDrivePoseEstimator;
@@ -21,6 +22,8 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.MecanumDriveKinematics;
 import edu.wpi.first.math.kinematics.MecanumDriveWheelPositions;
 import edu.wpi.first.math.kinematics.MecanumDriveWheelSpeeds;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -36,6 +39,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
+import frc.robot.vision.LimelightHelpers.PoseEstimate;
+
 import static frc.robot.Constants.DrivetrainConstants.*;
 import static frc.robot.Constants.MotorControllers.*;
 
@@ -142,18 +147,18 @@ public class DriveSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("kD", SmartDashboard.getNumber("kD", kD));
 
         // telemetry
-        // SmartDashboard.putData("Field", field);
+        SmartDashboard.putData("Field", field);
         // PathPlannerLogging.setLogCurrentPoseCallback((pose) -> {
         //     field.setRobotPose(pose);
         // });
 
-        // PathPlannerLogging.setLogTargetPoseCallback((pose) -> {
-        //     field.getObject("target pose").setPose(pose);
-        // });
+        PathPlannerLogging.setLogTargetPoseCallback((pose) -> {
+            field.getObject("target pose").setPose(pose);
+        });
 
-        // PathPlannerLogging.setLogActivePathCallback((poses) -> {
-        //     field.getObject("path").setPoses(poses);
-        // });
+        PathPlannerLogging.setLogActivePathCallback((poses) -> {
+            field.getObject("path").setPoses(poses);
+        });
     }
 
     // --- Public Methods -------------------------------------------------------------------------
@@ -227,6 +232,14 @@ public class DriveSubsystem extends SubsystemBase {
         );
     }
 
+    public void addVisionMeasurement(Pose2d pose, double timestampSeconds, Matrix<N3, N1> stdDevs) {
+        poseEstimator.addVisionMeasurement(pose, timestampSeconds, stdDevs);
+    }
+
+    public Pose2d getPose() {
+        return poseEstimator.getEstimatedPosition();
+    }
+
     // --- Private Methods ------------------------------------------------------------------------
 
     private MecanumDriveWheelPositions getWheelPositions() {
@@ -249,6 +262,19 @@ public class DriveSubsystem extends SubsystemBase {
         );
     }
 
+    /** Returns true if the given estimate should be accepted and added to the poseEstimator. */
+    public boolean shouldAcceptVisionMeasurement(PoseEstimate estimate) {
+        // turning faster than 720 degrees per second
+        if (Math.abs(gyro.getRate()) > 720) {
+            return false;
+        }
+        // no visible tag
+        if (estimate.tagCount == 0) {
+            return false;
+        }
+        return true;
+    }
+
     // --- SubsystemBase --------------------------------------------------------------------------
 
     @Override 
@@ -257,10 +283,11 @@ public class DriveSubsystem extends SubsystemBase {
         // code
         if (Robot.isReal()) {
             poseEstimator.update(gyro.getRotation2d(), getWheelPositions());
-            // telemetry
-            field.setRobotPose(poseEstimator.getEstimatedPosition());
-            posePublisher.set(poseEstimator.getEstimatedPosition());
         }
+
+        // telemetry
+        field.setRobotPose(poseEstimator.getEstimatedPosition());
+        posePublisher.set(poseEstimator.getEstimatedPosition());
     }
 
     @Override
@@ -286,10 +313,6 @@ public class DriveSubsystem extends SubsystemBase {
         frController.setD(SmartDashboard.getNumber("kD", kD));
         rlController.setD(SmartDashboard.getNumber("kD", kD));
         rrController.setD(SmartDashboard.getNumber("kD", kD));
-
-        // telemetry
-        field.setRobotPose(poseEstimator.getEstimatedPosition());
-        posePublisher.set(poseEstimator.getEstimatedPosition());
     }
 
     @Override
