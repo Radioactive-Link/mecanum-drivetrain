@@ -19,14 +19,14 @@ import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import frc.robot.vision.LimelightHelpers.PoseEstimate;
 import frc.robot.Constants.VisionConstants;
+import frc.robot.Robot;
 import frc.robot.subsystems.DriveSubsystem;
 
 /** 
@@ -36,10 +36,15 @@ import frc.robot.subsystems.DriveSubsystem;
  * already used for simulation.
  */
 public class Vision {
+    private VisionSim visionSim;
+
     public Vision() {
-        var cameraPos = VisionConstants.kCameraPos;
+        if (Robot.isSimulation()) {
+            visionSim = new VisionSim();
+        }
+        var cameraPos = kCameraPos;
         LimelightHelpers.setCameraPose_RobotSpace(
-            VisionConstants.kCameraName,
+            kCameraName,
             cameraPos.getX(),
             cameraPos.getY(),
             cameraPos.getZ(),
@@ -54,6 +59,10 @@ public class Vision {
      * deemed to be unreliable. 
      */
     public void update(DriveSubsystem driveSubsystem) {
+        if (Robot.isSimulation()) {
+            updateSimulation(driveSubsystem);
+            return;
+        }
         LimelightHelpers.SetRobotOrientation(
             "limelight",
             driveSubsystem.getPose().getRotation().getDegrees(),
@@ -74,12 +83,12 @@ public class Vision {
                 degStdDevs = 6;
             } 
             // target has large area and estimated pose is close
-            else if (Vision.getBestTargetArea(estimate) > 0.8 && poseDifference < 0.5) {
+            else if (getBestTargetArea(estimate) > 0.8 && poseDifference < 0.5) {
                 xyStdDevs = 1;
                 degStdDevs = 12;
             }
             // target is further away, but estimated pose is closer
-            else if (Vision.getBestTargetArea(estimate) > 0.1 && poseDifference < 0.3) {
+            else if (getBestTargetArea(estimate) > 0.1 && poseDifference < 0.3) {
                 xyStdDevs = 2;
                 degStdDevs = 30;
             }
@@ -87,6 +96,24 @@ public class Vision {
                 estimate.pose, estimate.timestampSeconds,
                 VecBuilder.fill(xyStdDevs, xyStdDevs, Units.degreesToRadians(degStdDevs)));
         }
+    }
+
+    /** Update the vision simulation. */
+    private void updateSimulation(DriveSubsystem driveSubsystem) {
+        if (visionSim == null) {
+            DriverStation.reportError("Vision.updateSimulation(): Vision Simulation is enabled but not instantiated. Doing nothing", null);
+            return;
+        }
+        var estPose = visionSim.getEstimatedRobotPose();
+        estPose.ifPresent(est -> {
+            var estStdDevs = visionSim.getEstimationStdDevs();
+            driveSubsystem.addVisionMeasurement(est.estimatedPose.toPose2d(), est.timestampSeconds, estStdDevs);
+        });
+
+        visionSim.updateSimulation(driveSubsystem.getPose());
+
+        var debugField = visionSim.getSimDebugField();
+        debugField.getObject("EstimatedRobot").setPose(driveSubsystem.getPose());
     }
 
     // --- Utility --------------------------------------------------------------------------------
@@ -108,7 +135,7 @@ public class Vision {
     // --- Simulation -----------------------------------------------------------------------------
 
     /** Class that handles the simulated vision pipeline. */
-    public static class VisionSim {
+    private class VisionSim {
         private VisionSystemSim visionSim = new VisionSystemSim("visionSim");
         private PhotonCamera camera = new PhotonCamera("photonLimelight");
         // basically a placeholder for sim since the limelight firmware and api is used on the real
@@ -122,7 +149,7 @@ public class Vision {
         );
         private Matrix<N3, N1> curStdDevs;
 
-        public VisionSim() {
+        private VisionSim() {
             // add all simulated april tag targets
             visionSim.addAprilTags(AprilTagFieldLayout.loadField(AprilTagFields.k2025Reefscape));
             // TODO: setup camera properties once info is obtained
@@ -133,21 +160,11 @@ public class Vision {
             photonPoseEstimator.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY);
         }
 
-        /** Rotate the Simulated Camera. Useful if camera is mounted on a moving system. */
-        public void rotateCamera(Rotation3d rotation) {
-            visionSim.adjustCamera(
-                cameraSim,
-                new Transform3d(
-                    VisionConstants.kCameraPos.getTranslation().rotateBy(rotation),
-                    VisionConstants.kCameraPos.getRotation().rotateBy(rotation))
-            );
-        }
-
         /** 
          * Update the vision simulation. Should be called periodically. Requires the robot's
          * pose
          */
-        public void updateSimulation(Pose2d robotPose) {
+        private void updateSimulation(Pose2d robotPose) {
             visionSim.update(robotPose);
         }
 
@@ -156,7 +173,7 @@ public class Vision {
          * 
          * Basically taken from PhotonLib examples.
          */
-        public Optional<EstimatedRobotPose> getEstimatedRobotPose() {
+        private Optional<EstimatedRobotPose> getEstimatedRobotPose() {
             Optional<EstimatedRobotPose> visionEst = Optional.empty();
             for (var change : camera.getAllUnreadResults()) {
                 visionEst = photonPoseEstimator.update(change);
@@ -217,11 +234,11 @@ public class Vision {
             }
         }
 
-        public Matrix<N3, N1> getEstimationStdDevs() {
+        private  Matrix<N3, N1> getEstimationStdDevs() {
             return curStdDevs;
         }
 
-        public Field2d getSimDebugField() {
+        private Field2d getSimDebugField() {
             return visionSim.getDebugField();
         }
     }

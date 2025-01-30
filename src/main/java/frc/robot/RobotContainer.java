@@ -21,39 +21,16 @@ import frc.robot.vision.Vision;
 public class RobotContainer {
   private DriveSubsystem driveSubsystem = new DriveSubsystem();
   private Vision vision = new Vision();
-  private Vision.VisionSim visionSim;
   private CommandXboxController controller = new CommandXboxController(0);
 
   public RobotContainer() {
-    if (Robot.isSimulation()) {
-      visionSim = new Vision.VisionSim();
-    }
     setDefaultCommands();
     configureBindings();
     setupDashboard();
   }
 
   public void periodic() {
-    if (Robot.isReal()) {
-      vision.update(driveSubsystem);
-    }
-  }
-
-  public void simulationPeriodic() {
-    if (visionSim == null) {
-      DriverStation.reportError("RobotContainer.simulationPeriodic(): Vision Simulation is enabled but not instantiated. Doing nothing", null);
-      return;
-    }
-    var estPose = visionSim.getEstimatedRobotPose();
-    estPose.ifPresent(est -> {
-      var estStdDevs = visionSim.getEstimationStdDevs();
-      driveSubsystem.addVisionMeasurement(est.estimatedPose.toPose2d(), est.timestampSeconds, estStdDevs);
-    });
-
-    visionSim.updateSimulation(driveSubsystem.getPose());
-
-    var debugField = visionSim.getSimDebugField();
-    debugField.getObject("EstimatedRobot").setPose(driveSubsystem.getPose());
+    vision.update(driveSubsystem);
   }
 
   /** Sets default commands on all relevant subsystems. */
